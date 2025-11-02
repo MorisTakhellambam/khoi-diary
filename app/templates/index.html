@@ -13,9 +13,10 @@
   <div class="note">
     <h3>{{ note.title }}</h3>
     <p>{{ note.content }}</p>
-    <form method="post" action="/delete/{{ note.id }}">
-      <button type="submit" class="delete">🗑️ Delete</button>
+    <form action="/delete/{{ note.id }}" method="post" onsubmit="return confirmDelete()">
+      <button type="submit" class="delete-btn">🗑️ Delete</button>
     </form>
+
   </div>
   {% else %}
   <p>Hwjik amta yaodri, keinom esllo</p>
