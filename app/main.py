@@ -4,6 +4,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app import models, database
+from app.database import Base, engine
+from app.models import Note  # your Note model
+
+Base.metadata.create_all(bind=engine)
+
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
