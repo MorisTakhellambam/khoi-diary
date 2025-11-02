@@ -1,46 +1,22 @@
-from fastapi import FastAPI, Request, Form
-from fastapi.responses import RedirectResponse, HTMLResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session
-from app import models, database
-from app.database import Base, engine
-from app.models import Note  # your Note model
+# app/database.py
+import os
+from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 
-Base.metadata.create_all(bind=engine)
+load_dotenv()
 
+DATABASE_URL = "postgresql://neondb_owner:npg_RJukx4IeG0pw@ep-autumn-shadow-a1qzuvud.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 
-app = FastAPI()
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-templates = Jinja2Templates(directory="app/templates")
+# Ensure it’s Postgres, not SQLite
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL not found in environment variables")
 
-models.Base.metadata.create_all(bind=database.engine)
+# Optional: force SSL mode (Neon requires it)
+if "sslmode" not in DATABASE_URL:
+    DATABASE_URL += "?sslmode=require"
 
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-@app.get("/", response_class=HTMLResponse)
-def read_notes(request: Request):
-    db = database.SessionLocal()
-    notes = db.query(models.Note).order_by(models.Note.id.desc()).all()
-    db.close()
-    return templates.TemplateResponse("index.html", {"request": request, "notes": notes})
-
-
-@app.post("/add", response_class=RedirectResponse)
-def add_note(request: Request, title: str = Form(...), content: str = Form(...)):
-    db = database.SessionLocal()
-    note = models.Note(title=title, content=content)
-    db.add(note)
-    db.commit()
-    db.close()
-    return RedirectResponse("/", status_code=303)
-
-
-@app.post("/delete/{note_id}", response_class=RedirectResponse)
-def delete_note(note_id: int):
-    db = database.SessionLocal()
-    note = db.query(models.Note).filter(models.Note.id == note_id).first()
-    if note:
-        db.delete(note)
-        db.commit()
-    db.close()
-    return RedirectResponse("/", status_code=303)
+Base = declarative_base()
